@@ -33,7 +33,7 @@ class Pages(object):
         labels: Union[int, list],
         key="__Pages_curent",
         on_submit=None,
-        progress_bar=True
+        progress_bar=True,
     ):
         """
         Parameters
@@ -61,6 +61,7 @@ class Pages(object):
         self.current_page_key = key
         self.on_submit = on_submit
         self.progress_bar = progress_bar
+        self.nav_context = None
 
         self._prev_btn = Pages.DEFAULT_PREV_BUTTON
         self._next_btn = Pages.DEFAULT_NEXT_BUTTON
@@ -143,7 +144,7 @@ class Pages(object):
             Function taking one argument (the current page instance) and returning the "previous" button for page navigation.
         """
         self._prev_btn = func
-    
+
     @property
     def next_button(self):
         """
@@ -162,7 +163,7 @@ class Pages(object):
             Function taking one argument (the current page instance) and returning the "next" button for page navigation.
         """
         self._next_btn = func
-    
+
     @property
     def submit_button(self):
         """
@@ -190,7 +191,12 @@ class Pages(object):
         Display the navigation buttons
         """
         submitted = False
-        left, _, right = st.columns([2, 4, 2])
+        if self.nav_context is not None:
+            with self.nav_context:
+                left, _, right = st.columns([2, 4, 2])
+        else:
+            left, _, right = st.columns([2, 4, 2])
+
         with left:
             self.prev_button
         with right:
@@ -199,6 +205,12 @@ class Pages(object):
             else:
                 self.next_button
         if self.progress_bar and self.n_pages > 1:
-            st.progress(self.current / (self.n_pages - 1))
+            progress_call = lambda: st.progress(self.current / (self.n_pages - 1))
+            if self.nav_context:
+                with self.nav_context:
+                    progress_call()
+            else:
+                progress_call()
+
         if submitted:
             self.on_submit()
